@@ -83,32 +83,36 @@ namespace DocumentFormat.OpenXml.Packaging
             // TODO: should we delay load?
             PackagePart metroPart = this.OpenXmlPackage.Package.GetPart(uriTarget);
 
-            if (this.IsContentTypeFixed &&
-                metroPart.ContentType != this.ContentType)
+            if (metroPart != null) // mono can return null from GetPart() - what fun - ignore and hope for the best
             {
-                string errorMessage = String.Format(CultureInfo.CurrentUICulture,
-                                                    ExceptionMessages.InvalidPartContentType,
-                                                    metroPart.Uri.OriginalString,
-                                                    metroPart.ContentType,
-                                                    this.ContentType);
 
-                OpenXmlPackageException e = new OpenXmlPackageException(errorMessage);
+                if (this.IsContentTypeFixed &&
+                    metroPart.ContentType != this.ContentType)
+                {
+                    string errorMessage = String.Format(CultureInfo.CurrentUICulture,
+                        ExceptionMessages.InvalidPartContentType,
+                        metroPart.Uri.OriginalString,
+                        metroPart.ContentType,
+                        this.ContentType);
 
-                //e.Data.Add("Part Uri", metroPart.Uri.OriginalString );
-                //e.Data.Add("Part Content Type", metroPart.ContentType);
-                //e.Data.Add("Expected Content Type", this.ContentType);
- 
-                throw e;
+                    OpenXmlPackageException e = new OpenXmlPackageException(errorMessage);
+
+                    //e.Data.Add("Part Uri", metroPart.Uri.OriginalString );
+                    //e.Data.Add("Part Content Type", metroPart.ContentType);
+                    //e.Data.Add("Expected Content Type", this.ContentType);
+
+                    throw e;
+                }
+
+                this._metroPart = metroPart;
+
+                // add the _uri to be reserved
+                this.OpenXmlPackage.ReserveUri(this.ContentType, this.Uri);
+
+                // load recursively
+                RelationshipCollection relationshipCollection = new PackagePartRelationshipPropertyCollection(this.PackagePart);
+                LoadReferencedPartsAndRelationships(openXmlPackage, this, relationshipCollection, loadedParts);
             }
-
-            this._metroPart = metroPart;
-
-            // add the _uri to be reserved
-            this.OpenXmlPackage.ReserveUri(this.ContentType, this.Uri);
-
-            // load recursively
-            RelationshipCollection relationshipCollection = new PackagePartRelationshipPropertyCollection(this.PackagePart);
-            LoadReferencedPartsAndRelationships(openXmlPackage, this, relationshipCollection, loadedParts);
         }
 
         // can not use generic, at it will emit error
